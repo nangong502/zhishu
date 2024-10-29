@@ -56,8 +56,6 @@
             <artifactId>hutool-all</artifactId>
         </dependency>
     </dependencies>
-
-
     <build>
         <!--打包名称-->
         <finalName>${project.artifactId}</finalName>
