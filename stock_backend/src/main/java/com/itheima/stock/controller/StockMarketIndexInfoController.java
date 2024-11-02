@@ -2,6 +2,7 @@ package com.itheima.stock.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.benmanes.caffeine.cache.Cache;
 import com.itheima.stock.pojo.domain.InnerMarketDomain;
 import com.itheima.stock.pojo.entity.StockMarketIndexInfo;
 import com.itheima.stock.pojo.entity.StockRtInfo;
@@ -13,6 +14,7 @@ import com.itheima.stock.vo.resp.R;
 import lombok.RequiredArgsConstructor;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDateTime;
+import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -37,6 +40,7 @@ import java.util.List;
 public class StockMarketIndexInfoController {
     private final StockInfoConfig stockInfoConfig;
     private final IStockMarketIndexInfoService marketIndexInfoService;
+    private final Cache<String,Object> caffeineCache;
 
     /**
      * @author nangong
@@ -56,29 +60,57 @@ public class StockMarketIndexInfoController {
 //                .withDayOfMonth(28).withHourOfDay(9).withMinuteOfHour(31).withSecondOfMinute(0);
 //        LocalDateTime lastLocalDateTime = dateTime.toLocalDateTime();
 //        System.out.println(lastLocalDateTime);
-        //查询
-        LambdaQueryWrapper<StockMarketIndexInfo> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(StockMarketIndexInfo::getMarketCode,stockInfoConfig.getInner());
-        wrapper.last("AND cur_time ='2021-12-28 09:31:00'");
-        List<StockMarketIndexInfo> list = marketIndexInfoService.list(wrapper);
-        //封装
-        List<InnerMarketDomain> returnlist = new ArrayList<>();
-        for (StockMarketIndexInfo stockMarketIndexInfo : list) {
-            InnerMarketDomain marketDomain = new InnerMarketDomain();
-            BeanUtils.copyProperties(stockMarketIndexInfo,marketDomain);
-            marketDomain.setTradeAmt(stockMarketIndexInfo.getTradeAmount());
-            marketDomain.setTradeVol(stockMarketIndexInfo.getTradeVolume());
-            marketDomain.setCode(stockMarketIndexInfo.getMarketCode());
-            marketDomain.setName(stockMarketIndexInfo.getMarketName());
-            BigDecimal sub = stockMarketIndexInfo.getCurPoint().subtract(stockMarketIndexInfo.getPreClosePoint());
-            marketDomain.setUpDown(sub);
-            marketDomain.setRose(sub.divide(stockMarketIndexInfo.getPreClosePoint(),BigDecimal.ROUND_CEILING));
-            BigDecimal subtract = stockMarketIndexInfo.getMaxPoint().subtract(stockMarketIndexInfo.getMinPoint());
-            marketDomain.setAmplitude(subtract.divide(stockMarketIndexInfo.getPreClosePoint(),BigDecimal.ROUND_CEILING));
-            marketDomain.setCurTime(DateTime.now().toDate());
-            returnlist.add(marketDomain);
-        }
-        return R.ok(returnlist);
+
+        //从缓存中加载数据，如果不存在，则走补偿策略获取数据，并存入本地缓存
+        R<List<InnerMarketDomain>> data= (R<List<InnerMarketDomain>>) caffeineCache.get("innerMarketInfos", key->{
+            //查询
+            LambdaQueryWrapper<StockMarketIndexInfo> wrapper = new LambdaQueryWrapper<>();
+            wrapper.in(StockMarketIndexInfo::getMarketCode,stockInfoConfig.getInner());
+            wrapper.last("AND cur_time ='2021-12-28 09:31:00'");
+            List<StockMarketIndexInfo> list = marketIndexInfoService.list(wrapper);
+            //封装
+            List<InnerMarketDomain> returnlist = new ArrayList<>();
+            for (StockMarketIndexInfo stockMarketIndexInfo : list) {
+                InnerMarketDomain marketDomain = new InnerMarketDomain();
+                BeanUtils.copyProperties(stockMarketIndexInfo,marketDomain);
+                marketDomain.setTradeAmt(stockMarketIndexInfo.getTradeAmount());
+                marketDomain.setTradeVol(stockMarketIndexInfo.getTradeVolume());
+                marketDomain.setCode(stockMarketIndexInfo.getMarketCode());
+                marketDomain.setName(stockMarketIndexInfo.getMarketName());
+                BigDecimal sub = stockMarketIndexInfo.getCurPoint().subtract(stockMarketIndexInfo.getPreClosePoint());
+                marketDomain.setUpDown(sub);
+                marketDomain.setRose(sub.divide(stockMarketIndexInfo.getPreClosePoint(),BigDecimal.ROUND_CEILING));
+                BigDecimal subtract = stockMarketIndexInfo.getMaxPoint().subtract(stockMarketIndexInfo.getMinPoint());
+                marketDomain.setAmplitude(subtract.divide(stockMarketIndexInfo.getPreClosePoint(),BigDecimal.ROUND_CEILING));
+                marketDomain.setCurTime(DateTime.now().toDate());
+                returnlist.add(marketDomain);
+            }
+            return R.ok(returnlist);
+        });
+        return data;
+//        //查询
+//        LambdaQueryWrapper<StockMarketIndexInfo> wrapper = new LambdaQueryWrapper<>();
+//        wrapper.in(StockMarketIndexInfo::getMarketCode,stockInfoConfig.getInner());
+//        wrapper.last("AND cur_time ='2021-12-28 09:31:00'");
+//        List<StockMarketIndexInfo> list = marketIndexInfoService.list(wrapper);
+//        //封装
+//        List<InnerMarketDomain> returnlist = new ArrayList<>();
+//        for (StockMarketIndexInfo stockMarketIndexInfo : list) {
+//            InnerMarketDomain marketDomain = new InnerMarketDomain();
+//            BeanUtils.copyProperties(stockMarketIndexInfo,marketDomain);
+//            marketDomain.setTradeAmt(stockMarketIndexInfo.getTradeAmount());
+//            marketDomain.setTradeVol(stockMarketIndexInfo.getTradeVolume());
+//            marketDomain.setCode(stockMarketIndexInfo.getMarketCode());
+//            marketDomain.setName(stockMarketIndexInfo.getMarketName());
+//            BigDecimal sub = stockMarketIndexInfo.getCurPoint().subtract(stockMarketIndexInfo.getPreClosePoint());
+//            marketDomain.setUpDown(sub);
+//            marketDomain.setRose(sub.divide(stockMarketIndexInfo.getPreClosePoint(),BigDecimal.ROUND_CEILING));
+//            BigDecimal subtract = stockMarketIndexInfo.getMaxPoint().subtract(stockMarketIndexInfo.getMinPoint());
+//            marketDomain.setAmplitude(subtract.divide(stockMarketIndexInfo.getPreClosePoint(),BigDecimal.ROUND_CEILING));
+//            marketDomain.setCurTime(DateTime.now().toDate());
+//            returnlist.add(marketDomain);
+//        }
+//        return R.ok(returnlist);
     }
 
 

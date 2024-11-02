@@ -8,63 +8,42 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <description>股票后端核心工程</description>
-    <artifactId>stock_backend</artifactId>
-    <!--不指定打包方式默认就是jar-->
     <packaging>jar</packaging>
+    <artifactId>stock_job</artifactId>
+    <description>核心功能:拉去股票数据</description>
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
     </properties>
 
     <dependencies>
-        <!--引入公共依赖-->
         <dependency>
             <groupId>com.itheima.stock</groupId>
             <artifactId>stock_common</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+
         <!-- 基本依赖 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <!--springboot测试依赖-->
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
         </dependency>
-        <!--密码加密和校验工具包-->
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-crypto</artifactId>
-        </dependency>
-        <!--redis场景依赖-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
-        <!-- redis创建连接池，默认不会创建连接池 -->
+        <!--引入xxljob核心依赖-->
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-pool2</artifactId>
-        </dependency>
-        <!--hutool万能工具包-->
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.amqp</groupId>
-            <artifactId>spring-rabbit</artifactId>
-            <version>2.4.7</version>
+            <groupId>com.xuxueli</groupId>
+            <artifactId>xxl-job-core</artifactId>
         </dependency>
     </dependencies>
+
     <build>
         <!--打包名称-->
         <finalName>app</finalName>
@@ -73,8 +52,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <!--jar包保存位置-->
-                    <outputDirectory>../docker/backend</outputDirectory>
+                    <outputDirectory>../docker/job</outputDirectory>
                 </configuration>
             </plugin>
         </plugins>

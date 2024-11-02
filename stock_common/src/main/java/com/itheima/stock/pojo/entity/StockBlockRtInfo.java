@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.TableId;
 import java.io.Serializable;
+
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -22,6 +24,7 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("stock_block_rt_info")
+@Builder
 public class StockBlockRtInfo implements Serializable {
 
     private static final long serialVersionUID = 1L;
